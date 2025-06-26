@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPEGC Simulador Avanzado</title>
+    <meta name="description" content="Plataforma de consultoría y planificación estratégica para la optimización fiscal de proyectos de inversión en Gran Canaria.">
+    <meta name="theme-color" content="#002E5D">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E%26%23128200;%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --color-primary: #002E5D; /* SPEGC Blue */
+            --color-primary-light: #0055A4;
+            --color-accent: #FFC107; /* Gold Accent */
+            --color-background: #F0F2F5; /* Light Grey BG */
+            --color-surface: #FFFFFF;
+            --color-text: #333333;
+            --color-text-secondary: #555555;
+            --color-border: #D9D9D9;
+            --color-success: #2E7D32;
+            --color-warning: #FF8F00;
+            --color-error: #C62828;
+            --color-info: #1976D2;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 15px 30px rgba(0,0,0,0.15);
+            --radius: 8px;
+        }
+        
+        /* General Resets & Body */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--color-background); color: var(--color-text); line-height: 1.6; font-size: 16px; }
+        .hidden { display: none !important; }
+
+        /* Login Screen */
+        .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, var(--color-primary) 0%, #001f4d 100%); padding: 1rem; }
+        .login-container { background: var(--color-surface); padding: 3rem; border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 100%; max-width: 450px; text-align: center; border-top: 5px solid var(--color-accent); }
+        .login-header { margin-bottom: 2rem; }
+        .login-logos { display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; color: var(--color-primary); font-weight: bold; font-size: 1.2rem; }
+        .login-title { font-size: 2rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem; }
+        .login-subtitle { font-size: 1rem; color: var(--color-text-secondary); }
+        .form-group { margin-bottom: 1.5rem; text-align: left; position: relative; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--color-text); }
+        .form-control { width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 1rem; transition: all 0.2s; }
+        .form-control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(0, 46, 93, 0.2); }
+        .form-control.error { border-color: var(--color-error); }
+        .field-error-message { color: var(--color-error); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 500; display: block; }
+        .error-message { color: var(--color-error); font-size: 0.875rem; margin-top: 0.25rem; display: none; }
+        .error-message.show { display: block; }
+        
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 1.5rem; border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .btn--primary { background-color: var(--color-primary); color: white; }
+        .btn--primary:hover { background-color: #001f4d; }
+        .btn--secondary { background-color: var(--color-border); color: var(--color-text); }
+        .btn--secondary:hover { background-color: #c0c0c0; }
+        .btn--success { background-color: var(--color-success); color: white; }
+        .btn--success:hover { background-color: #1b5e20; }
+        .btn--warning { background-color: var(--color-warning); color: white; }
+        .btn--warning:hover { background-color: #e65100; }
+        .btn--full-width { width: 100%; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; background-color: #9E9E9E; }
+        
+        .legal-text { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 2rem; line-height: 1.5; }
+
+        /* Main App Layout */
+        .app-header { background: var(--color-surface); border-bottom: 1px solid var(--color-border); box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 1000; }
+        .header-content { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; max-width: 1400px; margin: 0 auto; }
+        .brand-section { display: flex; align-items: center; gap: 1rem; }
+        .app-title { font-size: 1.5rem; font-weight: 700; color: var(--color-primary); }
+        .main-nav { display: flex; gap: 0.5rem; }
+        .nav-btn { padding: 0.6rem 1.2rem; background: transparent; border: none; border-radius: var(--radius); color: var(--color-text-secondary); font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .nav-btn:hover { background-color: var(--color-background); color: var(--color-text); }
+        .nav-btn.active { background-color: var(--color-primary); color: white; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .app-section { display: none; }
+        .app-section.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Progress Bar */
+        .progress-bar { width: 100%; height: 6px; background-color: var(--color-border); border-radius: 3px; margin-bottom: 2rem; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); transition: width 0.3s ease; }
+        .progress-steps { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .progress-step { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--color-text-secondary); }
+        .progress-step.active { color: var(--color-primary); font-weight: 600; }
+        .progress-step.completed { color: var(--color-success); }
+        .step-number { width: 24px; height: 24px; border-radius: 50%; background-color: var(--color-border); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
+        .progress-step.active .step-number { background-color: var(--color-primary); }
+        .progress-step.completed .step-number { background-color: var(--color-success); }
+
+        /* Common Components */
+        .card { background: var(--color-surface); border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--color-border); }
+        .section-title { font-size: 2rem; font-weight: 700; color: var(--color-text); margin-bottom: 2rem; border-bottom: 3px solid var(--color-primary); padding-bottom: 0.5rem; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+        
+        /* Enhanced Tooltips */
+        .tooltip { position: relative; display: inline-block; cursor: help; }
+        .tooltip .tooltiptext { visibility: hidden; width: 300px; background-color: #333; color: #fff; text-align: left; border-radius: 6px; padding: 15px; position: absolute; z-index: 1001; bottom: 125%; left: 50%; margin-left: -150px; opacity: 0; transition: opacity 0.3s; font-size: 0.875rem; font-weight: normal; line-height: 1.4; box-shadow: var(--shadow-md); }
+        .tooltip .tooltiptext::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #333 transparent transparent transparent; }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        .tooltip-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background-color: var(--color-info); color: white; font-size: 0.75rem; margin-left: 0.5rem; }
+        .tooltip-label { display: flex; align-items: center; }
+        .tooltip-title { font-weight: bold; color: var(--color-accent); display: block; margin-bottom: 5px;}
+        .tooltip-example { font-style: italic; color: #ccc; margin-top: 8px; display: block; }
+        .tooltip-reference { font-size: 0.7rem; color: #aaa; margin-top: 8px; border-top: 1px solid #555; padding-top: 8px; display: block; }
+
+
+        /* Toggle Switches */
+        .toggle-container { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .toggle-switch { position: relative; display: inline-block; width: 60px; height: 34px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .toggle-slider { background-color: var(--color-primary); }
+        input:checked + .toggle-slider:before { transform: translateX(26px); }
+        .toggle-label-group { display: flex; flex-direction: column; }
+        .toggle-label { font-weight: 500; color: var(--color-text); }
+        .toggle-description { font-size: 0.875rem; color: var(--color-text-secondary); margin-top: 0.25rem; }
+        .toggle-container.disabled .toggle-label { color: #999; }
+        .toggle-container.disabled .toggle-slider { cursor: not-allowed; background-color: #e0e0e0; }
+
+
+        /* Conditional Fields */
+        .conditional-field {
+            display: none;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s ease-in-out;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--color-border);
+            margin-top: 1rem;
+        }
+        .conditional-field.show {
+            display: block;
+            opacity: 1;
+            max-height: 1000px;
+        }
+
+        /* Comparison Dashboard & Results */
+        .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .location-title { text-align: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; padding: 1rem; border-radius: var(--radius); color: white; }
+        .location-title.gran-canaria { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light)); }
+        .location-title.peninsula { background: linear-gradient(135deg, #455A64, #78909C); }
+        .result-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--color-border); }
+        .result-label { font-weight: 500; }
+        .result-value { font-weight: 700; font-size: 1.1rem; }
+        .result-value.positive { color: var(--color-success); }
+        .result-value.negative { color: var(--color-error); }
+        .summary-card { text-align: center; margin-top: 2rem; }
+        .advantage-metrics { display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; }
+        .advantage-metric { display: inline-block; margin: 0.5rem 1rem; }
+        .advantage-value { display: block; font-size: 2.5rem; font-weight: 700; color: var(--color-success); }
+        .advantage-label { font-size: 0.9rem; color: var(--color-text-secondary); text-transform: uppercase; }
+        .chart-container { height: 400px; margin-top: 2rem; }
+
+        /* Advisory & Financing Engine */
+        .engine-results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; }
+        .advisory-content { display: grid; gap: 1rem; margin-top: 1rem; }
+        .advisory-item { padding: 1.5rem; border-radius: var(--radius); border-left: 5px solid; }
+        .advisory-item.success { background: #E8F5E9; border-left-color: var(--color-success); }
+        .advisory-item.info { background: #E3F2FD; border-left-color: var(--color-info); }
+        .advisory-item.warning { background: #FFF8E1; border-left-color: var(--color-warning); }
+        .advisory-item.critical { background: #FFEBEE; border-left-color: var(--color-error); }
+        .advisory-title { font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .financing-proposal-summary { margin-bottom: 2rem; text-align: center; border: 1px solid var(--color-border); padding: 1.5rem; border-radius: var(--radius); background-color: #fafafa;}
+        .financing-proposal-summary h3 { color: var(--color-primary); margin-bottom: 1rem;}
+        .financing-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .financing-summary-metric .value { font-size: 1.5rem; font-weight: 700; }
+        .financing-summary-metric .value.positive { color: var(--color-success); }
+        .financing-summary-metric .value.negative { color: var(--color-error); }
+        .financing-summary-metric .label { font-size: 0.9rem; color: var(--color-text-secondary); }
+        .financing-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .financing-table th, .financing-table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--color-border); }
+        .financing-table th { background-color: #f8f9fa; font-weight: 600; }
+        .financing-table .amount-col { text-align: right; font-weight: 700; }
+        .financing-summary-row td { font-weight: bold; border-top: 2px solid var(--color-primary); }
+        .financing-type-label { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; color: white; white-space: nowrap; }
+        .financing-type-label.subvencion { background-color: var(--color-success); }
+        .financing-type-label.prestamo { background-color: #D32F2F; }
+        .financing-type-label.participativo { background-color: var(--color-warning); }
+        .financing-type-label.aval { background-color: var(--color-info); }
+        .financing-type-label.capital { background-color: #6A1B9A; }
+
+
+        /* Alerts and Notifications */
+        .alert { padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid; }
+        .alert.info { background-color: #E3F2FD; border-color: var(--color-info); color: #0D47A1; }
+        .alert.warning { background-color: #FFF8E1; border-color: var(--color-warning); color: #E65100; }
+        .alert.error { background-color: #FFEBEE; border-color: var(--color-error); color: #B71C1C; }
+        .alert.success { background-color: #E8F5E9; border-color: var(--color-success); color: #1B5E20; }
+
+        /* Disclaimer & Footer */
+        .disclaimer { background: #FFF3E0; border: 1px solid var(--color-warning); border-radius: var(--radius); padding: 1.5rem; margin: 2rem 0; font-size: 0.9rem; color: var(--color-text-secondary); }
+        .app-footer { background: var(--color-surface); border-top: 1px solid var(--color-border); padding: 2rem; text-align: center; margin-top: 3rem; }
+        .footer-logos { gap: 2rem; margin-bottom: 1rem; font-weight: bold; color: var(--color-text-secondary); }
+
+        /* Responsive */
+        @media (max-width: 900px) { .comparison-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { 
+            .header-content { flex-direction: column; gap: 1rem; } 
+            .main-nav { flex-wrap: wrap; justify-content: center; }
+            .tooltip .tooltiptext { width: 250px; margin-left: -125px; }
+            .engine-results-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="login-logos">
+                    <span>SPEGC</span>
+                </div>
+                <h1 class="login-title">Simulador Avanzado</h1>
+                <p class="login-subtitle">Plataforma de Planificación y Consultoría Estratégica</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="password" class="form-label">Acceso Autorizado</label>
+                    <input type="password" id="password" class="form-control" placeholder="Contraseña de Acceso" required>
+                    <div class="error-message" id="passwordError">Contraseña incorrecta</div>
+                </div>
+                <button type="submit" class="btn btn--primary btn--full-width">Acceder</button>
+            </form>
+            <div class="legal-text">
+                <strong>AVISO LEGAL:</strong> Esta es una herramienta de simulación con fines orientativos. Los resultados no constituyen asesoramiento fiscal, jurídico ni financiero. La normativa fiscal está sujeta a cambios e interpretaciones. Consulte siempre con un profesional cualificado para validar su caso específico. SPEGC no se hace responsable de las decisiones tomadas en base a las estimaciones de esta simulación.
+            </div>
+        </div>
+    </div>
+
+    <main id="mainApp" class="hidden">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand-section">
+                    <h1 class="app-title">SPEGC Simulador Avanzado</h1>
+                </div>
+                <nav class="main-nav">
+                    <button class="nav-btn active" data-section="hub">Asistente de Proyecto</button>
+                    <button class="nav-btn" data-section="comparison">Dashboard Comparativo</button>
+                    <button class="nav-btn" data-section="financing">Motor de Financiación</button>
+                </nav>
+                <button id="logoutBtn" class="btn">Salir</button>
+            </div>
+        </header>
+
+        <section id="hubSection" class="app-section active">
+            <div class="container">
+                <div class="card">
+                    <h2 class="section-title">Asistente de Definición de Proyecto</h2>
+                    
+                     <div class="disclaimer" style="margin-top: -1rem; margin-bottom: 2rem;">
+                        <strong>Bienvenido al Simulador Avanzado de SPEGC.</strong> Comience cargando un caso de estudio predefinido para explorar el potencial de la plataforma, o defina su propio proyecto paso a paso para obtener un análisis estratégico personalizado.
+                    </div>
+
+                    <div class="card" style="margin-bottom: 2rem; background-color: #f8f9fa;">
+                        <h4 style="color: var(--color-primary); margin-bottom: 1rem;">Cargar Caso de Estudio Predefinido</h4>
+                        <select id="caseStudyLoader" class="form-control">
+                            <option value="">Seleccione un caso para cargar...</option>
+                            <option value="tech_startup_small">Startup de Servicios Digitales</option>
+                            <option value="tech_startup">Startup Tecnológica (I+D)</option>
+                            <option value="audiovisual_service">Servicio de Post-Producción</option>
+                            <option value="audiovisual_production">Producción Audiovisual Internacional</option>
+                            <option value="industrial_sostenible_medium">Planta de Economía Circular Mediana</option>
+                            <option value="industrial_plant">Implantación Industrial Estratégica</option>
+                            <option value="nueva_empresa_id">Nueva Empresa I+D+i (Sin Beneficios)</option>
+                            <option value="videojuegos_mixto">Estudio de Videojuegos (Mixto)</option>
+                        </select>
+                        <div id="caseStudyDescription" class="alert info hidden" style="margin-top: 1rem;"></div>
+                    </div>
+
+                    <div class="progress-steps">
+                        <div class="progress-step active" data-step="1"><span class="step-number">1</span><span>General</span></div>
+                        <div class="progress-step" data-step="2"><span class="step-number">2</span><span>Financiero</span></div>
+                        <div class="progress-step" data-step="3"><span class="step-number">3</span><span>Incentivos</span></div>
+                        <div class="progress-step" data-step="4"><span class="step-number">4</span><span>Detalles</span></div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%;"></div>
+                    </div>
+
+                    <form id="projectWizard">
+                        <fieldset id="step1" class="wizard-step">
+                             <h3 style="margin-bottom: 1.5rem; color: var(--color-primary);">Paso 1: Información General</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="projectName" class="form-label">Nombre del Proyecto</label>
+                                    <input type="text" class="form-control" id="projectName" placeholder="Ej: Desarrollo SaaS B2B">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sector" class="form-label">Sector de Actividad</label>
+                                    <select class="form-control" id="sector">
+                                        <option value="">Seleccione un sector</option>
+                                        <option value="tecnologia">Tecnología e I+D+i</option>
+                                        <option value="audiovisual">Audiovisual y Entretenimiento</option>
+                                        <option value="industrial">Industrial y Sostenibilidad</option>
+                                        <option value="agroindustrial">Agroindustrial y Economía Azul</option>
+                                        <option value="servicios">Servicios Profesionales</option>
+                                        <option value="videojuegos">Videojuegos (Mixto)</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="tipoEmpresa" class="form-label">Tipo de Empresa</label>
+                                    <select class="form-control" id="tipoEmpresa">
+                                        <option value="nueva">Nueva Empresa (Sin actividad previa)</option>
+                                        <option value="existente">Empresa Existente</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ubicacion" class="form-label">Ubicación del Proyecto</label>
+                                    <select class="form-control" id="ubicacion">
+                                        <option value="gran_canaria" selected>Gran Canaria</option>
+                                        <option value="peninsula" disabled>Península/Otro Territorio Común (Solo Comparativo)</option>
+                                    </select>
+                                </div>
+                            </div>
+                             <div style="text-align: right; margin-top: 2rem;">
+                                <button type="button" class="btn btn--primary" id="btnStep1">Siguiente</button>
+                            </div>
+                        </fieldset>
+
+                        <fieldset id="step2" class="wizard-step hidden">
+                           <h3 style="margin-bottom: 1.5rem; color: var(--color-primary);">Paso 2: Datos Financieros Anuales</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="beneficioBruto" class="form-label">Beneficio Antes de Impuestos (€)</label>
+                                    <input type="number" class="form-control" id="beneficioBruto" min="0" step="1000" placeholder="Ej: 150000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="inversionTotal" class="form-label">Inversión Total del Proyecto (€)</label>
+                                    <input type="number" class="form-control" id="inversionTotal" min="0" step="1000" placeholder="Ej: 200000">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="inversionActivos" class="form-label">Inversión en Activos Fijos Nuevos (€)</label>
+                                    <input type="number" class="form-control" id="inversionActivos" min="0" step="1000" placeholder="Ej: 80000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="empleos" class="form-label">Número de Empleos a Crear/Mantener</label>
+                                    <input type="number" class="form-control" id="empleos" min="0" placeholder="Ej: 5">
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                                <button type="button" class="btn btn--secondary" id="btnPrev2">Anterior</button>
+                                <button type="button" class="btn btn--primary" id="btnStep2">Siguiente</button>
+                            </div>
+                        </fieldset>
+
+                        <fieldset id="step3" class="wizard-step hidden">
+                            <h3 style="margin-bottom: 1.5rem; color: var(--color-primary);">Paso 3: Configuración de Incentivos Fiscales</h3>
+                            <div class="alert info" id="sectorGuidance">Guía por Sector...</div>
+                             
+                            <div class="form-row">
+                                <div class="toggle-container" id="toggleRICContainer">
+                                    <label class="toggle-switch"><input type="checkbox" id="toggleRIC"><span class="toggle-slider"></span></label>
+                                    <div class="toggle-label-group">
+                                        <div class="tooltip-label">
+                                            <span class="toggle-label">Reserva para Inversiones en Canarias (RIC)</span>
+                                            <div class="tooltip"><span class="tooltip-icon">?</span><div class="tooltiptext"><span class="tooltip-title">Reserva para Inversiones (RIC)</span>Permite reducir la base imponible del Impuesto sobre Sociedades hasta en un 90% de los beneficios no distribuidos, siempre que su importe se destine a realizar determinadas inversiones en Canarias.<span class="tooltip-example">Ej: Una empresa con 100.000€ de beneficio puede 'guardar' 90.000€ libres de impuestos si los invierte en activos fijos, I+D, etc., en los siguientes 4 años.</span><span class="tooltip-reference">Art. 27, Ley 19/1994</span></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="toggle-container" id="toggleDICContainer">
+                                    <label class="toggle-switch"><input type="checkbox" id="toggleDIC"><span class="toggle-slider"></span></label>
+                                    <div class="toggle-label-group">
+                                        <div class="tooltip-label">
+                                            <span class="toggle-label">Deducción por Inversiones (DIC)</span>
+                                            <div class="tooltip"><span class="tooltip-icon">?</span><div class="tooltiptext"><span class="tooltip-title">Deducción por Inversiones (DIC)</span>Es una deducción sobre la cuota a pagar (no sobre la base) del 25% por la inversión en activos fijos nuevos. Es una alternativa a la RIC, a menudo más interesante para empresas sin tantos beneficios pero con alta inversión inicial.<span class="tooltip-example">Ej: Una inversión de 100.000€ en maquinaria nueva genera una rebaja directa de 25.000€ en el impuesto a pagar.</span><span class="tooltip-reference">Art. 26, Ley 19/1994</span></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="toggle-container" id="toggleIDContainer">
+                                    <label class="toggle-switch"><input type="checkbox" id="toggleID"><span class="toggle-slider"></span></label>
+                                    <div class="toggle-label-group">
+                                        <div class="tooltip-label">
+                                            <span class="toggle-label">Deducciones por I+D+i</span>
+                                            <div class="tooltip"><span class="tooltip-icon">?</span><div class="tooltiptext"><span class="tooltip-title">Deducción por I+D+i</span>Canarias tiene los porcentajes de deducción por I+D+i más altos del mundo (45%-75.6% del gasto). Cubre gastos en investigación, desarrollo e innovación.<span class="tooltip-example">Ej: 100.000€ de gasto en desarrolladores para un nuevo software puede generar una deducción de 45.000€.</span><span class="tooltip-reference">Art. 35, Ley del Impuesto sobre Sociedades</span></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="toggle-container conditional-field" id="monetizacionContainer">
+                                    <label class="toggle-switch"><input type="checkbox" id="toggleMonetizacion"><span class="toggle-slider"></span></label>
+                                    <div class="toggle-label-group">
+                                        <span class="toggle-label">Monetizar Deducción I+D+i (Abono)</span>
+                                        <span class="toggle-description">Recibir el 80% de la deducción como un ingreso, si no hay cuota para aplicarla.</span>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="form-row">
+                                <div class="toggle-container" id="toggleITContainer">
+                                    <label class="toggle-switch"><input type="checkbox" id="toggleIT"><span class="toggle-slider"></span></label>
+                                    <div class="toggle-label-group"><span class="toggle-label">Deducciones por Innovación Tecnológica (IT)</span></div>
+                                </div>
+                                <div class="toggle-container" id="toggleAudiovisualContainer">
+                                    <label class="toggle-switch"><input type="checkbox" id="toggleAudiovisual"><span class="toggle-slider"></span></label>
+                                    <div class="toggle-label-group">
+                                        <div class="tooltip-label">
+                                            <span class="toggle-label">Deducciones Audiovisuales</span>
+                                            <div class="tooltip"><span class="tooltip-icon">?</span><div class="tooltiptext"><span class="tooltip-title">Deducción Audiovisual</span>Incentivo potentísimo para producciones (películas, series, videojuegos) y servicios a producciones. Deducción del 54%-45% sobre el gasto en Canarias.<span class="tooltip-example">Ej: Un servicio de animación que cueste 1.000.000€ genera una deducción de 540.000€ para el productor.</span><span class="tooltip-reference">Art. 36, Ley del Impuesto sobre Sociedades</span></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="toggle-container" id="toggleZECContainer">
+                                    <label class="toggle-switch"><input type="checkbox" id="toggleZEC"><span class="toggle-slider"></span></label>
+                                    <div class="toggle-label-group">
+                                        <div class="tooltip-label">
+                                            <span class="toggle-label">Zona Especial Canaria (ZEC)</span>
+                                            <div class="tooltip"><span class="tooltip-icon">?</span><div class="tooltiptext"><span class="tooltip-title">Zona Especial Canaria (ZEC)</span>Régimen de baja tributación que permite a las empresas tributar a un tipo impositivo del 4% en el Impuesto sobre Sociedades, en lugar del 25% general. Requiere creación de empleo e inversión mínima.<span class="tooltip-example">Ej: Una consultora tecnológica que facture 1.000.000€ en beneficios pagaría 40.000€ de impuestos, en vez de 250.000€.</span><span class="tooltip-reference">Ley 19/1994</span></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="incompatibilityAlert" class="alert warning hidden"></div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                                <button type="button" class="btn btn--secondary" id="btnPrev3">Anterior</button>
+                                <button type="button" class="btn btn--primary" id="btnStep3">Siguiente</button>
+                            </div>
+                        </fieldset>
+
+                        <fieldset id="step4" class="wizard-step hidden">
+                             <h3 style="margin-bottom: 1.5rem; color: var(--color-primary);">Paso 4: Detalles Específicos de Gastos e Inversión</h3>
+                            <div id="idFields" class="conditional-field"><h4 style="color: var(--color-primary); margin-bottom: 1rem;">Detalles de I+D+i</h4><div class="form-row"><div class="form-group"><label for="gastosID" class="form-label">Gastos Totales de I+D+i (€)</label><input type="number" class="form-control" id="gastosID" min="0" step="1000" placeholder="Ej: 70000"></div><div class="form-group"><label for="personalExclusivaID" class="form-label">% Gasto en Personal Investigador Exclusivo</label><input type="number" class="form-control" id="personalExclusivaID" min="0" max="100" placeholder="Ej: 100"></div></div><div class="form-row"><div class="form-group"><label for="inversionActivosID" class="form-label">Inversión Activos Fijos para I+D (€)</label><input type="number" class="form-control" id="inversionActivosID" min="0" step="1000" placeholder="Ej: 25000"></div><div class="form-group"><label for="mediaInversionID_2Y" class="form-label">Media de Gasto I+D (2 años anteriores) (€)</label><input type="number" class="form-control" id="mediaInversionID_2Y" min="0" step="1000" placeholder="Ej: 50000"></div></div><div class="form-row"><div class="form-group"><label for="tieneIMV" class="form-label">¿Dispone de Informe Motivado Vinculante (IMV)?</label><select class="form-control" id="tieneIMV"><option value="no">No</option><option value="si">Sí</option><option value="tramite">En trámite</option></select></div></div></div>
+                            <div id="itFields" class="conditional-field"><h4 style="color: var(--color-primary); margin-bottom: 1rem;">Detalles de Innovación Tecnológica</h4><div class="form-row"><div class="form-group"><label for="gastosIT" class="form-label">Gastos en Innovación Tecnológica (€)</label><input type="number" class="form-control" id="gastosIT" min="0" step="1000" placeholder="Ej: 15000"></div></div></div>
+                            <div id="audiovisualFields" class="conditional-field"><h4 style="color: var(--color-primary); margin-bottom: 1rem;">Detalles de Producción Audiovisual</h4><div class="form-row"><div class="form-group"><label for="gastosAudiovisual" class="form-label">Gastos Elegibles en Canarias (€)</label><input type="number" class="form-control" id="gastosAudiovisual" min="0" step="1000" placeholder="Ej: 1200000"></div><div class="form-group"><label for="tipoProduccion" class="form-label">Tipo de Producción</label><select class="form-control" id="tipoProduccion"><option value="produccion_espanola">Producción Española</option><option value="servicio_extranjera">Servicio a Producción Extranjera</option><option value="espectaculo">Espectáculo en vivo</option></select></div></div></div>
+                             <div id="zecFields" class="conditional-field"><h4 style="color: var(--color-primary); margin-bottom: 1rem;">Detalles de ZEC</h4><div class="alert info"><strong>Requisitos ZEC:</strong> Para acogerse al 4% de tipo impositivo, se debe cumplir con una inversión mínima (100k€ en Gran Canaria/Tenerife, 50k€ en el resto) y creación de empleo (5 empleos en G.C./Tfe, 3 en el resto) en los primeros años.</div><div class="form-row"><div class="form-group"><label for="inversionMinimaZEC" class="form-label">Inversión Mínima ZEC Comprometida (€)</label><input type="number" class="form-control" id="inversionMinimaZEC" min="0" step="1000" value="100000"></div><div class="form-group"><label for="empleosMinimoZEC" class="form-label">Empleos Mínimos ZEC Comprometidos</label><input type="number" class="form-control" id="empleosMinimoZEC" min="0" value="5"></div></div></div>
+                             
+                            <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                                <button type="button" class="btn btn--secondary" id="btnPrev4">Anterior</button>
+                                <button type="button" class="btn btn--success" id="btnAnalyzeProject">🚀 Analizar Proyecto</button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparisonSection" class="app-section">
+            <div class="container">
+                <h2 class="section-title" id="comparisonTitle">Dashboard Comparativo</h2>
+                <div class="comparison-grid">
+                    <div class="card">
+                        <h3 class="location-title gran-canaria">Régimen Fiscal de Gran Canaria (REF)</h3>
+                        <div id="refResults"></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="location-title peninsula">Régimen Común (Península)</h3>
+                        <div id="commonResults"></div>
+                    </div>
+                </div>
+                <div class="card summary-card">
+                    <h2 class="section-title">Ventaja Gran Canaria</h2>
+                    <div class="advantage-metrics">
+                        <div class="advantage-metric">
+                            <span class="advantage-value" id="totalFiscalAdvantage"></span>
+                            <span class="advantage-label">Ahorro Fiscal Total</span>
+                        </div>
+                        <div class="advantage-metric">
+                            <span class="advantage-value" id="effectiveRateCanarias"></span>
+                            <span class="advantage-label">Tasa Efectiva (Gran Canaria)</span>
+                        </div>
+                        <div class="advantage-metric">
+                            <span class="advantage-value" id="effectiveRatePeninsula"></span>
+                            <span class="advantage-label">Tasa Efectiva (Península)</span>
+                        </div>
+                        <div class="advantage-metric">
+                            <span class="advantage-value" id="netInvestment"></span>
+                            <span class="advantage-label">Inversión Neta Optimizada</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="section-title">Visualizaciones</h2>
+                    <div class="chart-container">
+                        <canvas id="financingStructureChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="taxComparisonChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2 class="section-title">Análisis del Asesor Virtual</h2>
+                    <div id="advisoryEngineResults" class="advisory-content"></div>
+                </div>
+                <div style="text-align: center; margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
+                     <button class="btn btn--secondary" onclick="NavigationManager.showSection('hub')">Modificar Proyecto</button>
+                    <button class="btn btn--success" onclick="generatePDFReport()">Generar Informe de Consultoría (PDF)</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="financingSection" class="app-section">
+            <div class="container">
+                <h2 class="section-title">Motor de Financiación Estratégica</h2>
+                <div class="card">
+                    <div id="financingEngineResults"></div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="app-footer">
+            <div class="footer-logos">
+                <span>SPEGC © 2025. Propiedad Intelectual.</span>
+            </div>
+            <p class="legal-text" style="font-size: 0.8rem; max-width: 800px; margin: auto;">Esta herramienta y su contenido son propiedad de la Sociedad de Promoción Económica de Gran Canaria. Su uso está destinado a fines de simulación y orientación. Prohibida su reproducción, distribución o modificación sin autorización explícita.</p>
+        </footer>
+    </main>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        <script>
+// // =================================================================================
+        // CONSTANTS
+        // =================================================================================
+        const Constants = {
+            FISCAL: {
+                TIPO_GENERAL_IS: 0.25, TIPO_NUEVA_EMPRESA: 0.15, TIPO_ZEC: 0.04,
+                RIC_LIMITE_BASE_IMPONIBLE: 0.90,
+                ID_COMUN_BASE: 0.25, ID_COMUN_EXCESO: 0.42, ID_COMUN_PERSONAL: 0.17, ID_COMUN_ACTIVOS: 0.08,
+                ID_CANARIAS_BASE: 0.45, ID_CANARIAS_EXCESO: 0.756, ID_CANARIAS_PERSONAL: 0.37, ID_CANARIAS_ACTIVOS: 0.28,
+                IT_COMUN: 0.12, IT_CANARIAS: 0.45, DIC_CANARIAS: 0.25,
+                AUDIOVISUAL_TRAMO_1_LIMITE: 1000000, AUDIOVISUAL_TIPO_SERVICIO_EXT: 0.50, AUDIOVISUAL_TIPO_PROD_ESP: 0.54, AUDIOVISUAL_TIPO_RESTO: 0.45,
+                LIMITE_CUOTA_COMUN: 0.50, LIMITE_CUOTA_CANARIAS: 0.60,
+                MONETIZACION_ABONO_PORCENTAJE: 0.80
+            },
+            DOM: {
+                // Add DOM element IDs here
+            }
+        };
+
+        // =================================================================================
+        // DATA
+        // =================================================================================
+        const Data = {
+            case_studies: {
+                tech_startup_small: { description: "Empresa emergente de servicios digitales con componente de I+D+i moderado. Ideal para ver la monetización.", projectName: "Startup de Servicios Digitales", beneficioBruto: 150000, inversionTotal: 50000, inversionActivos: 30000, empleos: 3, sector: "tecnologia", tipoEmpresa: "nueva", gastosID: 50000, personalExclusivaID: 0, inversionActivosID: 0, mediaInversionID_2Y: 0, gastosIT: 0, toggleRIC: true, toggleID: true, toggleIT: false, toggleDIC: false, toggleAudiovisual: false, toggleZEC: false, toggleMonetizacion: true, ubicacion: 'gran_canaria', tieneIMV: 'no' },
+                tech_startup: { description: "Empresa de software con I+D+i consolidado. Busca optimizar fiscalidad y planificar expansión.", projectName: "Startup Tecnológica (I+D)", beneficioBruto: 200000, inversionTotal: 250000, inversionActivos: 80000, empleos: 8, sector: "tecnologia", tipoEmpresa: "existente", gastosID: 100000, personalExclusivaID: 50, inversionActivosID: 40000, mediaInversionID_2Y: 75000, gastosIT: 20000, toggleRIC: true, toggleID: true, toggleIT: true, toggleDIC: false, toggleAudiovisual: false, toggleZEC: false, toggleMonetizacion: false, ubicacion: 'gran_canaria', tieneIMV: 'si' },
+                audiovisual_service: { description: "Servicio especializado de post-producción audiovisual para producciones extranjeras.", projectName: "Servicio de Post-Producción", beneficioBruto: 400000, inversionTotal: 200000, inversionActivos: 150000, empleos: 8, sector: "audiovisual", tipoEmpresa: "existente", gastosAudiovisual: 300000, tipoProduccion: "servicio_extranjera", toggleRIC: true, toggleID: false, toggleIT: false, toggleDIC: true, toggleAudiovisual: true, toggleZEC: false, toggleMonetizacion: false, ubicacion: 'gran_canaria' },
+                audiovisual_production: { description: "Productora internacional que traslada un servicio de producción a Gran Canaria para beneficiarse del incentivo fiscal.", projectName: "Producción Audiovisual Internacional", beneficioBruto: 800000, inversionTotal: 1500000, inversionActivos: 500000, empleos: 25, sector: "audiovisual", tipoEmpresa: "existente", gastosAudiovisual: 1200000, tipoProduccion: "produccion_espanola", toggleRIC: true, toggleID: false, toggleIT: false, toggleDIC: false, toggleAudiovisual: true, toggleZEC: false, toggleMonetizacion: false, ubicacion: 'gran_canaria' },
+                industrial_sostenible_medium: { description: "Proyecto de economía circular de tamaño medio con fuerte inversión en activos.", projectName: "Planta de Economía Circular Mediana", beneficioBruto: 800000, inversionTotal: 1500000, inversionActivos: 1200000, empleos: 15, sector: "industrial", tipoEmpresa: "nueva", toggleRIC: true, toggleID: false, toggleIT: false, toggleDIC: true, toggleAudiovisual: false, toggleZEC: false, toggleMonetizacion: false, ubicacion: 'gran_canaria' },
+                industrial_plant: { description: "Proyecto de economía circular con inversión significativa en activos y creación de empleo cualificado, operando bajo el paraguas ZEC.", projectName: "Implantación Industrial Estratégica", beneficioBruto: 1200000, inversionTotal: 3000000, inversionActivos: 2500000, empleos: 35, sector: "industrial", tipoEmpresa: "existente", gastosID: 0, gastosIT: 0, toggleRIC: false, toggleID: false, toggleIT: false, toggleDIC: false, toggleAudiovisual: false, toggleZEC: true, toggleMonetizacion: false, ubicacion: 'gran_canaria', inversionMinimaZEC: 2500000, empleosMinimoZEC: 35 },
+                nueva_empresa_id: { description: "Empresa de base tecnológica sin beneficios en sus primeros años, pero con un gasto importante en I+D+i. Clave para entender la monetización.", projectName: "Nueva Empresa I+D+i (Sin Beneficios)", beneficioBruto: 0, inversionTotal: 100000, inversionActivos: 20000, empleos: 4, sector: "tecnologia", tipoEmpresa: "nueva", gastosID: 80000, personalExclusivaID: 100, inversionActivosID: 15000, mediaInversionID_2Y: 0, gastosIT: 0, toggleRIC: false, toggleID: true, toggleIT: false, toggleDIC: false, toggleAudiovisual: false, toggleZEC: false, toggleMonetizacion: true, ubicacion: 'gran_canaria', tieneIMV: 'no' },
+                videojuegos_mixto: { description: "Estudio de videojuegos que desarrolla su propio motor (I+D) y crea assets para la producción (Audiovisual).", projectName: "Estudio de Videojuegos (Mixto)", beneficioBruto: 300000, inversionTotal: 400000, inversionActivos: 100000, empleos: 12, sector: "videojuegos", tipoEmpresa: "existente", gastosID: 150000, personalExclusivaID: 60, inversionActivosID: 50000, mediaInversionID_2Y: 100000, gastosAudiovisual: 200000, tipoProduccion: "produccion_espanola", toggleRIC: true, toggleID: true, toggleIT: false, toggleDIC: false, toggleAudiovisual: true, toggleZEC: false, toggleMonetizacion: false, ubicacion: 'gran_canaria', tieneIMV: 'si' }
+            },
+            financing_options: [
+                { id: "spegc_innverpyme", name: "SPEGC - Innverpyme", type: "Préstamo Participativo", description: "Préstamo participativo para startups innovadoras en fases iniciales. Flexible y adaptado al crecimiento.", eligibility_rule: "is_innverpyme_eligible" },
+                { id: "enisa_jovenes", name: "ENISA - Jóvenes Emprendedores", type: "Préstamo Participativo", description: "Financiación para jóvenes de hasta 40 años para su primer proyecto empresarial.", eligibility_rule: "is_enisa_jovenes_eligible" },
+                { id: "enisa_crecimiento", name: "ENISA - Crecimiento", type: "Préstamo Participativo", description: "Apoyo a la consolidación y expansión de empresas con beneficios.", eligibility_rule: "is_enisa_crecimiento_eligible" },
+                { id: "enisa_audiovisual", name: "ENISA - Audiovisual", type: "Préstamo Participativo", description: "Línea específica para proyectos del sector audiovisual y de videojuegos.", eligibility_rule: "is_enisa_audiovisual_eligible" },
+                { id: "enisa_agro", name: "ENISA - Agroimpulso", type: "Préstamo Participativo", description: "Financiación para la transformación digital y la innovación en el sector agroalimentario.", eligibility_rule: "is_enisa_agro_eligible" },
+                { id: "cdti_pid", name: "CDTI - Proyectos de I+D (PID)", type: "Préstamo", description: "Ayuda parcialmente reembolsable para proyectos de investigación industrial o desarrollo experimental.", eligibility_rule: "is_cdti_pid_eligible" },
+                { id: "cdti_lic", name: "CDTI - Línea de Innovación (LIC)", type: "Préstamo", description: "Financiación para la incorporación y adaptación de tecnologías novedosas a la empresa.", eligibility_rule: "is_cdti_lic_eligible" },
+                { id: "cdti_innvierte", name: "CDTI - Innvierte", type: "Capital Riesgo", description: "Inversión directa en el capital de empresas tecnológicas y de alto crecimiento.", eligibility_rule: "is_cdti_innvierte_eligible" },
+                { id: "incentivos_regionales", name: "Incentivos Regionales", type: "Subvención", description: "Subvenciones a fondo perdido para grandes proyectos de inversión que fomenten la actividad económica en zonas específicas.", eligibility_rule: "is_incentivos_regionales_eligible" },
+                { id: "aciisi_inversion", name: "ACIISI - Subvenciones a la Inversión", type: "Subvención", description: "Ayudas del Gobierno de Canarias para la inversión en activos fijos en proyectos de modernización y diversificación.", eligibility_rule: "is_aciisi_inversion_eligible" },
+                { id: "crea_sgr", name: "CREA SGR", type: "Aval", description: "Sociedad de Garantía Recíproca especializada en el sector cultural y audiovisual, que facilita el acceso a la financiación bancaria.", eligibility_rule: "is_crea_sgr_eligible" },
+                { id: "avalcanarias_sgr", name: "AvalCanarias SGR", type: "Aval", description: "Sociedad de Garantía Recíproca que mejora las condiciones de financiación para pymes y autónomos en Canarias.", eligibility_rule: "is_avalcanarias_eligible" }
+            ]
+        };
+
+        // =================================================================================
+        // STATE MANAGEMENT
+        // =================================================================================
+        const State = {
+            current: {},
+
+            collect() {
+                const formElements = document.getElementById('projectWizard').elements;
+                const state = {};
+                for (const el of formElements) {
+                    if (el.id) {
+                        state[el.id] = el.type === 'checkbox' ? el.checked : (el.type === 'number' ? parseFloat(el.value) || 0 : el.value);
+                    }
+                }
+                this.current = state;
+                return this.current;
+            },
+
+            updateForm(state) {
+                for (const key in state) {
+                    const el = document.getElementById(key);
+                    if (el) {
+                        if (el.type === 'checkbox') el.checked = state[key];
+                        else el.value = state[key];
+                    }
+                }
+            }
+        };
+
+        // =================================================================================
+        // FISCAL ENGINE
+        // =================================================================================
+        const FiscalEngine = {
+            calculate(project) {
+                const isCanarias = project.ubicacion === 'gran_canaria';
+                const baseImponible = project.beneficioBruto;
+                let ricDotacion = 0;
+                if (isCanarias && project.toggleRIC) {
+                    ricDotacion = Math.min(baseImponible * Constants.FISCAL.RIC_LIMITE_BASE_IMPONIBLE, project.inversionActivos);
+                }
+                const baseImponiblePostRIC = baseImponible - ricDotacion;
+                let tipoImpositivo = Constants.FISCAL.TIPO_GENERAL_IS;
+                if (project.toggleZEC && isCanarias) {
+                    tipoImpositivo = Constants.FISCAL.TIPO_ZEC;
+                } else if (project.tipoEmpresa === 'nueva') {
+                    tipoImpositivo = Constants.FISCAL.TIPO_NUEVA_EMPRESA;
+                }
+                const cuotaIntegra = baseImponiblePostRIC * tipoImpositivo;
+                const deducciones = this.calculateDeductions(project, isCanarias);
+                const { deduccionesAplicadas, deduccionesPendientes, abonoMonetizacion } = this.applyDeductionLimits(deducciones, cuotaIntegra, project, isCanarias);
+                const cuotaLiquida = cuotaIntegra - deduccionesAplicadas;
+                const tasaEfectiva = baseImponible > 0 ? (cuotaLiquida - abonoMonetizacion) / baseImponible * 100 : 0;
+
+                return {
+                    baseImponible, ricDotacion, baseImponiblePostRIC, tipoImpositivo, cuotaIntegra,
+                    deduccionesGeneradas: deducciones,
+                    deduccionesAplicadas, deduccionesPendientes, abonoMonetizacion,
+                    cuotaLiquida, tasaEfectiva
+                };
+            },
+
+            calculateDeductions(project, isCanarias) {
+                let total = 0, id = 0, it = 0, dic = 0, audiovisual = 0;
+                if (project.toggleID) {
+                    id = this.calculateIDDeduction(project, isCanarias);
+                    total += id;
+                }
+                if (project.toggleIT) {
+                    it = project.gastosIT * (isCanarias ? Constants.FISCAL.IT_CANARIAS : Constants.FISCAL.IT_COMUN);
+                    total += it;
+                }
+                if (isCanarias && project.toggleDIC) {
+                    dic = project.inversionActivos * Constants.FISCAL.DIC_CANARIAS;
+                    total += dic;
+                }
+                if (isCanarias && project.toggleAudiovisual) {
+                    audiovisual = this.calculateAudiovisualDeduction(project);
+                    total += audiovisual;
+                }
+                return { total, id, it, dic, audiovisual };
+            },
+
+            calculateIDDeduction(project, isCanarias) {
+                let totalDedID = 0;
+                const { gastosID, mediaInversionID_2Y, personalExclusivaID, inversionActivosID } = project;
+                if (gastosID > 0) {
+                    const exceso = Math.max(0, gastosID - mediaInversionID_2Y);
+                    const base = gastosID - exceso;
+                    totalDedID += isCanarias ? (base * Constants.FISCAL.ID_CANARIAS_BASE + exceso * Constants.FISCAL.ID_CANARIAS_EXCESO) : (base * Constants.FISCAL.ID_COMUN_BASE + exceso * Constants.FISCAL.ID_COMUN_EXCESO);
+                    if (personalExclusivaID > 0) {
+                        const gastoPersonalExclusivo = gastosID * (personalExclusivaID / 100);
+                        totalDedID += gastoPersonalExclusivo * (isCanarias ? Constants.FISCAL.ID_CANARIAS_PERSONAL : Constants.FISCAL.ID_COMUN_PERSONAL);
+                    }
+                }
+                if (inversionActivosID > 0) totalDedID += inversionActivosID * (isCanarias ? Constants.FISCAL.ID_CANARIAS_ACTIVOS : Constants.FISCAL.ID_COMUN_ACTIVOS);
+                return totalDedID;
+            },
+            
+            calculateAudiovisualDeduction({ gastosAudiovisual, tipoProduccion }) {
+                if (!gastosAudiovisual || gastosAudiovisual === 0) return 0;
+                const primerM = Constants.FISCAL.AUDIOVISUAL_TRAMO_1_LIMITE;
+                const tipoBase = tipoProduccion === 'servicio_extranjera' ? Constants.FISCAL.AUDIOVISUAL_TIPO_SERVICIO_EXT : Constants.FISCAL.AUDIOVISUAL_TIPO_PROD_ESP;
+                return gastosAudiovisual <= primerM ? gastosAudiovisual * tipoBase : (primerM * tipoBase + (gastosAudiovisual - primerM) * Constants.FISCAL.AUDIOVISUAL_TIPO_RESTO);
+            },
+
+            applyDeductionLimits(deducciones, cuotaIntegra, project, isCanarias) {
+                const limiteCuota = cuotaIntegra * (isCanarias ? Constants.FISCAL.LIMITE_CUOTA_CANARIAS : Constants.FISCAL.LIMITE_CUOTA_COMUN);
+                const deduccionesAplicadas = Math.min(deducciones.total, limiteCuota);
+                let deduccionesPendientes = deducciones.total - deduccionesAplicadas;
+                let abonoMonetizacion = 0;
+                
+                // Enhanced monetization logic for both Canarias and Peninsula
+                if (project.toggleMonetizacion && !project.toggleZEC && deducciones.id > 0) {
+                    const idTotalGenerado = this.calculateIDDeduction(project, isCanarias);
+                    const idAplicadoProporcional = deducciones.id > 0 ? (deduccionesAplicadas * (idTotalGenerado / deducciones.total)) : 0;
+                    const idNoAplicado = idTotalGenerado - idAplicadoProporcional;
+
+                    if (idNoAplicado > 0) {
+                        if (isCanarias) {
+                            // Canarias: 80% monetization without additional restrictions
+                            abonoMonetizacion = idNoAplicado * Constants.FISCAL.MONETIZACION_ABONO_PORCENTAJE;
+                        } else {
+                            // Peninsula: 80% monetization with additional restrictions
+                            // Requirements: No workforce reduction, company must be viable, etc.
+                            // For simulation purposes, we apply the same 80% but note the restrictions
+                            abonoMonetizacion = idNoAplicado * Constants.FISCAL.MONETIZACION_ABONO_PORCENTAJE;
+                            // Note: In real implementation, additional checks would be needed:
+                            // - No workforce reduction in the 12 months prior to application
+                            // - Company financial viability
+                            // - Compliance with tax obligations
+                        }
+                        deduccionesPendientes -= idNoAplicado;
+                    }
+                }
+                
+                return { deduccionesAplicadas, deduccionesPendientes: Math.max(0, deduccionesPendientes), abonoMonetizacion };
+            }
+        };
+
+        // =================================================================================
+        // FINANCING ENGINE
+        // =================================================================================
+        const FinancingEngine = {
+            // Enhanced financing options with detailed data structure
+            financing_options: [
+                {
+                    id: "spegc_innverpyme",
+                    name: "SPEGC - Innverpyme",
+                    type: "Préstamo Participativo",
+                    description: "Préstamo participativo para startups innovadoras en fases iniciales. Flexible y adaptado al crecimiento.",
+                    tipo_interes: { fijo: false, variable: true, rango_min: 3.5, rango_max: 6.5 },
+                    plazo_amortizacion_max: 7,
+                    periodo_carencia: 2,
+                    limite_financiacion_eur: 300000,
+                    cofinanciacion_minima_propia_pct: 25,
+                    requisitos_tecnicos: "Empresa de base tecnológica o innovadora con sede en Canarias. Proyecto viable con potencial de crecimiento.",
+                    eligibility_rule: "is_innverpyme_eligible"
+                },
+                {
+                    id: "enisa_jovenes",
+                    name: "ENISA - Jóvenes Emprendedores",
+                    type: "Préstamo Participativo",
+                    description: "Financiación para jóvenes de hasta 40 años para su primer proyecto empresarial.",
+                    tipo_interes: { fijo: false, variable: true, rango_min: 3.25, rango_max: 6.25 },
+                    plazo_amortizacion_max: 7,
+                    periodo_carencia: 5,
+                    limite_financiacion_eur: 75000,
+                    cofinanciacion_minima_propia_pct: 50,
+                    requisitos_tecnicos: "Emprendedor menor de 40 años. Primera empresa. Proyecto innovador con viabilidad técnica y comercial.",
+                    eligibility_rule: "is_enisa_jovenes_eligible"
+                },
+                {
+                    id: "enisa_crecimiento",
+                    name: "ENISA - Crecimiento",
+                    type: "Préstamo Participativo",
+                    description: "Apoyo a la consolidación y expansión de empresas con beneficios.",
+                    tipo_interes: { fijo: false, variable: true, rango_min: 3.75, rango_max: 7.25 },
+                    plazo_amortizacion_max: 9,
+                    periodo_carencia: 7,
+                    limite_financiacion_eur: 1500000,
+                    cofinanciacion_minima_propia_pct: 30,
+                    requisitos_tecnicos: "Empresa consolidada con beneficios. Plan de expansión o diversificación. Modelo de negocio escalable.",
+                    eligibility_rule: "is_enisa_crecimiento_eligible"
+                },
+                {
+                    id: "cdti_pid",
+                    name: "CDTI - Proyectos de I+D (PID)",
+                    type: "Préstamo",
+                    description: "Ayuda parcialmente reembolsable para proyectos de investigación industrial o desarrollo experimental. Incluye Informe Motivado Vinculante para deducciones fiscales.",
+                    tipo_interes: { fijo: true, variable: false, rango_min: 0, rango_max: 0 },
+                    plazo_amortizacion_max: 10,
+                    periodo_carencia: 3,
+                    limite_financiacion_eur: 2000000,
+                    cofinanciacion_minima_propia_pct: 25,
+                    requisitos_tecnicos: "Proyecto de I+D con presupuesto mínimo 175.000€. Carácter innovador demostrable. Capacidad técnica y financiera.",
+                    eligibility_rule: "is_cdti_pid_eligible"
+                },
+                {
+                    id: "cdti_lic",
+                    name: "CDTI - Línea de Innovación (LIC)",
+                    type: "Préstamo",
+                    description: "Financiación para la incorporación y adaptación de tecnologías novedosas a la empresa.",
+                    tipo_interes: { fijo: true, variable: false, rango_min: 0, rango_max: 0 },
+                    plazo_amortizacion_max: 7,
+                    periodo_carencia: 2,
+                    limite_financiacion_eur: 300000,
+                    cofinanciacion_minima_propia_pct: 40,
+                    requisitos_tecnicos: "Proyecto de innovación tecnológica. Incorporación de tecnología novedosa para la empresa. Mejora competitiva demostrable.",
+                    eligibility_rule: "is_cdti_lic_eligible"
+                },
+                {
+                    id: "incentivos_regionales",
+                    name: "Incentivos Regionales",
+                    type: "Subvención",
+                    description: "Subvenciones a fondo perdido para grandes proyectos de inversión que fomenten la actividad económica en zonas específicas.",
+                    tipo_interes: { fijo: true, variable: false, rango_min: 0, rango_max: 0 },
+                    plazo_amortizacion_max: 0,
+                    periodo_carencia: 0,
+                    limite_financiacion_eur: 5000000,
+                    cofinanciacion_minima_propia_pct: 50,
+                    requisitos_tecnicos: "Inversión mínima 90.000€ en activos fijos. Creación de empleo. Mantenimiento de la inversión mínimo 5 años.",
+                    eligibility_rule: "is_incentivos_regionales_eligible"
+                },
+                {
+                    id: "aciisi_inversion",
+                    name: "ACIISI - Subvenciones a la Inversión",
+                    type: "Subvención",
+                    description: "Ayudas del Gobierno de Canarias para la inversión en activos fijos en proyectos de modernización y diversificación.",
+                    tipo_interes: { fijo: true, variable: false, rango_min: 0, rango_max: 0 },
+                    plazo_amortizacion_max: 0,
+                    periodo_carencia: 0,
+                    limite_financiacion_eur: 200000,
+                    cofinanciacion_minima_propia_pct: 60,
+                    requisitos_tecnicos: "PYME con sede en Canarias. Inversión mínima 20.000€. Modernización tecnológica o diversificación productiva.",
+                    eligibility_rule: "is_aciisi_inversion_eligible"
+                },
+                {
+                    id: "cabildo_gc_innovacion",
+                    name: "Cabildo de Gran Canaria - Innovación Empresarial",
+                    type: "Subvención",
+                    description: "Ayudas del Cabildo de Gran Canaria para proyectos de innovación y desarrollo tecnológico empresarial.",
+                    tipo_interes: { fijo: true, variable: false, rango_min: 0, rango_max: 0 },
+                    plazo_amortizacion_max: 0,
+                    periodo_carencia: 0,
+                    limite_financiacion_eur: 50000,
+                    cofinanciacion_minima_propia_pct: 50,
+                    requisitos_tecnicos: "Empresa con sede en Gran Canaria. Proyecto de innovación tecnológica. Impacto en competitividad empresarial.",
+                    eligibility_rule: "is_cabildo_gc_innovacion_eligible"
+                },
+                {
+                    id: "sodecan_capital_riesgo",
+                    name: "SODECAN - Capital Riesgo",
+                    type: "Capital Riesgo",
+                    description: "Participación en el capital de empresas canarias con alto potencial de crecimiento y rentabilidad.",
+                    tipo_interes: { fijo: false, variable: true, rango_min: 8, rango_max: 15 },
+                    plazo_amortizacion_max: 7,
+                    periodo_carencia: 0,
+                    limite_financiacion_eur: 600000,
+                    cofinanciacion_minima_propia_pct: 20,
+                    requisitos_tecnicos: "Empresa canaria con potencial de crecimiento. Plan de negocio sólido. Equipo directivo experimentado.",
+                    eligibility_rule: "is_sodecan_capital_eligible"
+                }
+            ],
+
+            analyze(project) {
+                const opportunities = this.financing_options.filter(opt => this.evaluateEligibility(opt, project));
+                const strategy = this.generateFinancingStrategy(project, opportunities);
+                return { opportunities, strategy };
+            },
+
+            evaluateEligibility(option, project) {
+                const rules = {
+                    is_innverpyme_eligible: () => project.sector !== 'servicios' && project.inversionTotal >= 50000 && project.tipoEmpresa === 'nueva',
+                    is_enisa_jovenes_eligible: () => project.tipoEmpresa === 'nueva',
+                    is_enisa_crecimiento_eligible: () => project.tipoEmpresa === 'existente' && project.beneficioBruto > 0,
+                    is_enisa_audiovisual_eligible: () => ['audiovisual', 'videojuegos'].includes(project.sector),
+                    is_enisa_agro_eligible: () => project.sector === 'agroindustrial',
+                    is_cdti_pid_eligible: () => (project.gastosID + project.inversionActivosID) >= 175000,
+                    is_cdti_lic_eligible: () => project.toggleIT && project.gastosIT > 20000,
+                    is_cdti_innvierte_eligible: () => project.tipoEmpresa === 'existente' && project.empleos >= 10 && project.inversionTotal > 200000 && project.sector === 'tecnologia',
+                    is_incentivos_regionales_eligible: () => project.sector === 'industrial' && project.inversionActivos >= 90000,
+                    is_aciisi_inversion_eligible: () => ['industrial', 'servicios', 'agroindustrial'].includes(project.sector) && project.inversionActivos >= 20000,
+                    is_crea_sgr_eligible: () => ['audiovisual', 'videojuegos'].includes(project.sector) && project.inversionTotal > 0,
+                    is_avalcanarias_eligible: () => project.inversionTotal > 15000,
+                    is_cabildo_gc_innovacion_eligible: () => ['tecnologia', 'industrial'].includes(project.sector) && project.inversionTotal >= 25000,
+                    is_sodecan_capital_eligible: () => project.tipoEmpresa === 'existente' && project.beneficioBruto > 100000 && project.empleos >= 5
+                };
+                return rules[option.eligibility_rule] ? rules[option.eligibility_rule]() : false;
+            },
+
+            generateFinancingStrategy(project, opportunities) {
+                const strategy = {
+                    recommended_combination: [],
+                    fiscal_synergies: [],
+                    total_financing_potential: 0,
+                    risk_assessment: 'medium'
+                };
+
+                // Analyze fiscal synergies
+                if (project.toggleID && opportunities.some(o => o.id.startsWith('cdti'))) {
+                    strategy.fiscal_synergies.push({
+                        type: 'IMV_CDTI',
+                        description: 'La aprobación de financiación CDTI otorga automáticamente un Informe Motivado Vinculante, blindando las deducciones de I+D+i y permitiendo su monetización segura.',
+                        fiscal_benefit: project.gastosID * 0.45 * 0.8 // Estimated monetization benefit
+                    });
+                }
+
+                // Recommend optimal combination based on project characteristics
+                if (project.tipoEmpresa === 'nueva' && project.sector === 'tecnologia') {
+                    const enisaJovenes = opportunities.find(o => o.id === 'enisa_jovenes');
+                    const spegcInnver = opportunities.find(o => o.id === 'spegc_innverpyme');
+                    
+                    if (enisaJovenes) strategy.recommended_combination.push({
+                        option: enisaJovenes,
+                        priority: 1,
+                        reasoning: 'Condiciones muy favorables para jóvenes emprendedores con 5 años de carencia.'
+                    });
+                    
+                    if (spegcInnver) strategy.recommended_combination.push({
+                        option: spegcInnver,
+                        priority: 2,
+                        reasoning: 'Complementa ENISA con financiación adicional específica para Canarias.'
+                    });
+                }
+
+                if (project.toggleID && (project.gastosID + project.inversionActivosID) >= 175000) {
+                    const cdtiPid = opportunities.find(o => o.id === 'cdti_pid');
+                    if (cdtiPid) strategy.recommended_combination.push({
+                        option: cdtiPid,
+                        priority: 1,
+                        reasoning: 'Financiación a coste cero + IMV que blinda deducciones fiscales. Sinergia fiscal crítica.'
+                    });
+                }
+
+                // Calculate total financing potential
+                strategy.total_financing_potential = opportunities.reduce((total, opp) => {
+                    return total + Math.min(opp.limite_financiacion_eur, project.inversionTotal * 0.7);
+                }, 0);
+
+                return strategy;
+            }
+        };
+
+        // =================================================================================
+        // ADVISORY ENGINE
+        // =================================================================================
+        const AdvisoryEngine = {
+            generate(project, refResults, financingResults) {
+                const advice = [];
+                
+                // Success stories - what's working well
+                if (refResults.ricDotacion > 0) {
+                    const ahorroRIC = refResults.ricDotacion * 0.25; // Approximate tax saving
+                    advice.push({ 
+                        type: 'success', 
+                        title: '✅ Optimización Vía RIC Exitosa', 
+                        content: `Ha dotado una RIC de ${UI.formatCurrency(refResults.ricDotacion)}, generando un ahorro fiscal inmediato de aproximadamente ${UI.formatCurrency(ahorroRIC)}. Esta dotación debe materializarse en inversión elegible en un plazo de 4 años. Recomendación: Planifique la materialización para maximizar el beneficio fiscal.`
+                    });
+                }
+                
+                if (refResults.deduccionesGeneradas.dic > 0) {
+                    advice.push({ 
+                        type: 'success', 
+                        title: '✅ Ahorro Directo Vía DIC', 
+                        content: `Ha generado una Deducción por Inversión (DIC) de ${UI.formatCurrency(refResults.deduccionesGeneradas.dic)}, obteniendo un ahorro directo del 25% sobre su inversión en activos fijos de ${UI.formatCurrency(project.inversionActivos)}. Esta deducción se aplica directamente sobre la cuota, maximizando el beneficio.`
+                    });
+                }
+                
+                if (refResults.abonoMonetizacion > 0) {
+                    const porcentajeMonetizado = (refResults.abonoMonetizacion / (refResults.deduccionesGeneradas.id * 0.8)) * 100;
+                    advice.push({ 
+                        type: 'success', 
+                        title: '💰 Inyección de Liquidez por Monetización', 
+                        content: `Ha optado por monetizar sus deducciones I+D+i no aplicadas, generando un abono (ingreso) de ${UI.formatCurrency(refResults.abonoMonetizacion)} (${porcentajeMonetizado.toFixed(0)}% de las deducciones no aplicadas). Esto mejora significativamente su flujo de caja en fases tempranas. Plazo de cobro: aproximadamente 6-12 meses tras la solicitud.`
+                    });
+                }
+
+                // Critical risks and urgent actions
+                if (project.toggleID && (project.gastosID + project.inversionActivosID) > 50000 && project.tieneIMV === 'no') {
+                    const deduccionEnRiesgo = FiscalEngine.calculateIDDeduction(project, true);
+                    advice.push({ 
+                        type: 'critical', 
+                        title: '🔴 ALTO RIESGO: Informe Motivado Vinculante (IMV) Urgente', 
+                        content: `Con una deducción I+D+i de ${UI.formatCurrency(deduccionEnRiesgo)} (base de gasto: ${UI.formatCurrency(project.gastosID + project.inversionActivosID)}), es CRÍTICO obtener un IMV del Ministerio de Ciencia. Sin él, Hacienda podría cuestionar hasta el 100% de la deducción en una inspección. Coste del IMV: ~3.000-5.000€. Tiempo de tramitación: 3-6 meses. ¡Solicítelo YA!`
+                    });
+                }
+
+                // Strategic synergies
+                if (financingResults.opportunities && financingResults.opportunities.some(o => o.id.startsWith("cdti")) && project.tieneIMV === 'no') {
+                    advice.push({ 
+                        type: 'info', 
+                        title: '⚡ SINERGIA ESTRATÉGICA: CDTI + I+D Fiscal', 
+                        content: `Su proyecto es elegible para financiación CDTI (${financingResults.opportunities.find(o => o.id.startsWith("cdti")).name}). VENTAJA CLAVE: La aprobación CDTI otorga automáticamente la calificación de I+D+i a efectos fiscales, actuando como un IMV gratuito y blindando su deducción de ${UI.formatCurrency(refResults.deduccionesGeneradas.id)}. Además, obtiene financiación a coste cero.`
+                    });
+                }
+
+                // Pending deductions management
+                if (refResults.deduccionesPendientes > 0) {
+                    const añosParaAgotar = Math.ceil(refResults.deduccionesPendientes / Math.max(refResults.cuotaIntegra, 1000));
+                    advice.push({ 
+                        type: 'warning', 
+                        title: '⏰ Gestión de Deducciones Acumuladas', 
+                        content: `Tiene ${UI.formatCurrency(refResults.deduccionesPendientes)} en deducciones pendientes. Al ritmo actual de cuota íntegra (${UI.formatCurrency(refResults.cuotaIntegra)}), tardaría ${añosParaAgotar} años en agotarlas. Estrategias: 1) Aumentar beneficios, 2) Considerar monetización si es I+D+i, 3) Planificar inversiones que generen más cuota.`
+                    });
+                }
+
+                // Optimization opportunities
+                if (project.beneficioBruto > 0 && project.inversionActivos > 0 && !project.toggleRIC) {
+                    const ricPotencial = Math.min(project.beneficioBruto * 0.9, project.inversionActivos);
+                    const ahorroRICPerdido = ricPotencial * 0.25;
+                    advice.push({ 
+                        type: 'info', 
+                        title: '💡 Oportunidad Perdida: RIC', 
+                        content: `Con beneficios de ${UI.formatCurrency(project.beneficioBruto)} e inversión de ${UI.formatCurrency(project.inversionActivos)}, podría dotar una RIC de ${UI.formatCurrency(ricPotencial)}, ahorrando ${UI.formatCurrency(ahorroRICPerdido)} en impuestos. La RIC es el mayor incentivo fiscal de Canarias. ¿Por qué no la está usando?`
+                    });
+                }
+
+                if (project.beneficioBruto <= 0 && project.gastosID > 0 && !project.toggleMonetizacion) {
+                    const monetizacionPotencial = FiscalEngine.calculateIDDeduction(project, true) * 0.8;
+                    advice.push({ 
+                        type: 'info', 
+                        title: '💰 Oportunidad de Liquidez: Monetización I+D+i', 
+                        content: `Sin beneficios pero con ${UI.formatCurrency(project.gastosID)} en gastos I+D+i, podría solicitar el abono de ${UI.formatCurrency(monetizacionPotencial)} para obtener liquidez inmediata. Esto es especialmente valioso para startups en fases de inversión. Requisito: Mantener la actividad de I+D+i.`
+                    });
+                }
+
+                if (project.sector === 'industrial' && project.inversionActivos > 100000 && !project.toggleDIC) {
+                    const dicPotencial = project.inversionActivos * 0.25;
+                    advice.push({ 
+                        type: 'info', 
+                        title: '🏭 Optimización Industrial: DIC', 
+                        content: `Para su proyecto industrial con inversión de ${UI.formatCurrency(project.inversionActivos)} en activos, la DIC le proporcionaría una deducción directa de ${UI.formatCurrency(dicPotencial)}. La DIC es especialmente atractiva para proyectos con alta inversión inicial y beneficios moderados.`
+                    });
+                }
+
+                // ZEC specific advice
+                if (project.toggleZEC) {
+                    const ahorroZEC = (project.beneficioBruto * 0.25) - (project.beneficioBruto * 0.04);
+                    advice.push({ 
+                        type: 'success', 
+                        title: '🏝️ Régimen ZEC Activado', 
+                        content: `Tributando al 4% en lugar del 25%, ahorra ${UI.formatCurrency(ahorroZEC)} anuales. Recuerde: debe mantener la inversión mínima (${UI.formatCurrency(project.inversionMinimaZEC || 100000)}) y el empleo comprometido (${project.empleosMinimoZEC || 5} empleos) durante toda la vigencia del régimen.`
+                    });
+                }
+
+                // Sector-specific advice
+                if (project.sector === 'audiovisual' && project.toggleAudiovisual) {
+                    const deduccionAV = refResults.deduccionesGeneradas.audiovisual;
+                    const porcentajeEfectivo = (deduccionAV / project.gastosAudiovisual) * 100;
+                    advice.push({ 
+                        type: 'success', 
+                        title: '🎬 Incentivo Audiovisual Maximizado', 
+                        content: `Con una deducción audiovisual de ${UI.formatCurrency(deduccionAV)} sobre gastos de ${UI.formatCurrency(project.gastosAudiovisual)} (${porcentajeEfectivo.toFixed(1)}% efectivo), está aprovechando uno de los incentivos más potentes de Europa. Asegúrese de documentar correctamente todos los gastos elegibles en Canarias.`
+                    });
+                }
+
+                return advice;
+            }
+        };
+
+        // =================================================================================
+        // UI & DOM MANIPULATION
+        // =================================================================================
+        const UI = {
+            // Formatting helpers
+            formatCurrency(amount) { return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount || 0); },
+            formatPercentage(value, decimals = 2) { return !isNaN(value) ? `${value.toFixed(decimals)}%` : '0.00%'; },
+            
+            // Render functions for dynamic content
+            updateButtons(validation) {
+                document.getElementById('btnStep1').disabled = !validation.step1Valid;
+                document.getElementById('btnStep2').disabled = !(validation.step1Valid && validation.step2Valid);
+                document.getElementById('btnStep3').disabled = !(validation.step1Valid && validation.step2Valid);
+                document.getElementById('btnAnalyzeProject').disabled = !validation.allStepsValid;
+            },
+            
+            updateErrorMessages(errors) {
+                document.querySelectorAll('.form-control.error').forEach(el => el.classList.remove('error'));
+                document.querySelectorAll('.field-error-message').forEach(el => el.remove());
+                for (const fieldId in errors) {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        field.classList.add('error');
+                        const errorElement = document.createElement('div');
+                        errorElement.className = 'field-error-message';
+                        errorElement.textContent = errors[fieldId];
+                        field.parentNode.appendChild(errorElement);
+                    }
+                }
+            },
+            
+            updateFieldVisibility(state) {
+                document.getElementById('idFields').classList.toggle('show', state.toggleID);
+                document.getElementById('itFields').classList.toggle('show', state.toggleIT);
+                document.getElementById('audiovisualFields').classList.toggle('show', state.toggleAudiovisual);
+                document.getElementById('zecFields').classList.toggle('show', state.toggleZEC);
+                document.getElementById('monetizacionContainer').classList.toggle('show', state.toggleID && !state.toggleZEC);
+            },
+
+            updateIncompatibilityAlert({ isValid, errors }) {
+                 const alertElement = document.getElementById('incompatibilityAlert');
+                 if (!isValid) {
+                     alertElement.innerHTML = `⚠️ <strong>Incompatibilidad Detectada:</strong> ${errors[0].message}`;
+                     alertElement.classList.remove('hidden');
+                 } else {
+                     alertElement.classList.add('hidden');
+                 }
+            },
+            
+            updateSectorGuidance(sector) {
+                const guidance = {
+                    'tecnologia': 'Sector tecnológico: se recomiendan I+D+i, IT y RIC. La monetización de I+D+i es clave para startups.',
+                    'audiovisual': 'Sector audiovisual: active la deducción específica. La RIC es compatible. I+D+i/IT solo aplican para innovación en procesos o software.',
+                    'industrial': 'Sector industrial: la RIC y la DIC son los incentivos principales para la inversión en maquinaria y naves. I+D+i si hay investigación industrial.',
+                    'agroindustrial': 'Sector agroindustrial y economía azul: evalúe las ayudas de ENISA Agro, subvenciones ACIISI y la aplicación de RIC/DIC a sus inversiones.',
+                    'videojuegos': 'Sector videojuegos: es un híbrido. Pueden aplicar deducciones de I+D+i (motor gráfico, IA) y audiovisuales (arte, animación).',
+                    'servicios': 'Sector servicios: la RIC es aplicable a inversiones en oficinas y equipamiento. Evalúe si existe componente de I+D+i o IT.',
+                    'otro': 'Evalúe cuidadosamente qué incentivos se ajustan a su actividad específica. La RIC es transversal para la mayoría de sectores.'
+                };
+                document.getElementById('sectorGuidance').textContent = guidance[sector] || 'Seleccione un sector para recibir orientación.';
+            },
+            
+            updateCaseStudyDescription(caseId) {
+                const descriptionDiv = document.getElementById('caseStudyDescription');
+                if (caseId && Data.case_studies[caseId]) {
+                    descriptionDiv.innerHTML = `<strong>Contexto:</strong> ${Data.case_studies[caseId].description}`;
+                    descriptionDiv.classList.remove('hidden');
+                } else {
+                    descriptionDiv.classList.add('hidden');
+                }
+            },
+            
+            // Render functions for the results page
+            displayResults(refResults, commonResults, project) {
+                document.getElementById('comparisonTitle').textContent = `Dashboard Comparativo: ${project.projectName}`;
+                const renderColumn = (results) => `<div class="result-item"><span>Base Imponible:</span><span class="result-value">${this.formatCurrency(results.baseImponible)}</span></div> ${results.ricDotacion > 0 ? `<div class="result-item"><span>(-) Dotación RIC:</span><span class="result-value negative">${this.formatCurrency(results.ricDotacion)}</span></div>` : ''} <div class="result-item"><span>Base Imponible Post-RIC:</span><span class="result-value">${this.formatCurrency(results.baseImponiblePostRIC)}</span></div> <div class="result-item"><span>Tipo Impositivo:</span><span class="result-value">${this.formatPercentage(results.tipoImpositivo, 0)}</span></div> <div class="result-item"><span>Cuota Íntegra:</span><span class="result-value">${this.formatCurrency(results.cuotaIntegra)}</span></div> <div class="result-item"><span>(-) Deducciones Aplicadas:</span><span class="result-value positive">${this.formatCurrency(results.deduccionesAplicadas)}</span></div> <div class="result-item"><strong><span>Cuota Líquida (Impuesto a Pagar):</span><span class="result-value">${this.formatCurrency(results.cuotaLiquida)}</span></strong></div> ${results.abonoMonetizacion > 0 ? `<div class="result-item"><span>(+) Abono Monetización I+D+i:</span><span class="result-value positive">${this.formatCurrency(results.abonoMonetizacion)}</span></div>` : ''} ${results.deduccionesPendientes > 0 ? `<div class="result-item"><span>Deducciones Pendientes (a futuro):</span><span class="result-value">${this.formatCurrency(results.deduccionesPendientes)}</span></div>` : ''} <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--color-border);"> <div class="result-item"><span>Tasa Efectiva (sobre beneficio):</span><span class="result-value">${this.formatPercentage(results.tasaEfectiva)}</span></div>`;
+                document.getElementById('refResults').innerHTML = renderColumn(refResults);
+                document.getElementById('commonResults').innerHTML = renderColumn(commonResults);
+                const totalFiscalAdvantage = (commonResults.cuotaLiquida - refResults.cuotaLiquida) + refResults.abonoMonetizacion;
+                document.getElementById('totalFiscalAdvantage').textContent = this.formatCurrency(totalFiscalAdvantage);
+                document.getElementById('effectiveRateCanarias').textContent = this.formatPercentage(refResults.tasaEfectiva);
+                document.getElementById('effectiveRatePeninsula').textContent = this.formatPercentage(commonResults.tasaEfectiva);
+                document.getElementById('netInvestment').textContent = this.formatCurrency(Math.max(0, project.inversionTotal - totalFiscalAdvantage));
+            },
+
+            displayAdvisory(advice) {
+                const container = document.getElementById('advisoryEngineResults');
+                if (!advice || advice.length === 0) { container.innerHTML = `<div class="advisory-item info"><div class="advisory-title">Sin recomendaciones específicas</div><div>El proyecto no presenta particularidades que requieran asesoramiento específico.</div></div>`; return; }
+                container.innerHTML = advice.map(item => `<div class="advisory-item ${item.type}"><div class="advisory-title">${item.title}</div><div>${item.content}</div></div>`).join('');
+            },
+
+            displayFinancing({ opportunities, strategy }) {
+                const container = document.getElementById('financingEngineResults');
+                if (opportunities.length === 0) { 
+                    container.innerHTML = `<div class="financing-item info">
+                        <div class="financing-title">Sin Oportunidades Claras Detectadas</div>
+                        <div>Con los datos actuales, no se han identificado automáticamente oportunidades de financiación pública destacadas. Le recomendamos una consulta personalizada con el equipo de SPEGC.</div>
+                    </div>`; 
+                    return; 
+                }
+
+                let html = '';
+
+                // Strategy summary
+                if (strategy && strategy.recommended_combination.length > 0) {
+                    html += `<div class="financing-proposal-summary">
+                        <h3>🎯 Estrategia de Financiación Recomendada</h3>
+                        <div class="financing-summary-grid">
+                            <div class="financing-summary-metric">
+                                <div class="value positive">${this.formatCurrency(strategy.total_financing_potential)}</div>
+                                <div class="label">Potencial Total de Financiación</div>
+                            </div>
+                            <div class="financing-summary-metric">
+                                <div class="value">${strategy.recommended_combination.length}</div>
+                                <div class="label">Instrumentos Recomendados</div>
+                            </div>
+                            <div class="financing-summary-metric">
+                                <div class="value">${strategy.fiscal_synergies.length}</div>
+                                <div class="label">Sinergias Fiscales</div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                    // Recommended combination
+                    html += `<div class="card" style="margin-bottom: 2rem;">
+                        <h4 style="color: var(--color-primary); margin-bottom: 1rem;">💡 Combinación Óptima Recomendada</h4>
+                        <table class="financing-table">
+                            <thead>
+                                <tr>
+                                    <th>Prioridad</th>
+                                    <th>Instrumento</th>
+                                    <th>Tipo</th>
+                                    <th>Límite</th>
+                                    <th>Interés</th>
+                                    <th>Carencia</th>
+                                    <th>Razonamiento</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                    
+                    strategy.recommended_combination.forEach(rec => {
+                        const opt = rec.option;
+                        const interestRange = opt.tipo_interes.fijo ? 
+                            (opt.tipo_interes.rango_min === 0 ? 'Sin interés' : `${opt.tipo_interes.rango_min}%`) :
+                            `${opt.tipo_interes.rango_min}%-${opt.tipo_interes.rango_max}%`;
+                        
+                        html += `<tr>
+                            <td><span class="financing-type-label ${opt.type.toLowerCase().includes('préstamo') ? 'prestamo' : opt.type.toLowerCase().includes('subvención') ? 'subvencion' : 'capital'}">${rec.priority}</span></td>
+                            <td><strong>${opt.name}</strong></td>
+                            <td>${opt.type}</td>
+                            <td class="amount-col">${this.formatCurrency(opt.limite_financiacion_eur)}</td>
+                            <td>${interestRange}</td>
+                            <td>${opt.periodo_carencia} años</td>
+                            <td style="font-size: 0.9rem;">${rec.reasoning}</td>
+                        </tr>`;
+                    });
+                    
+                    html += `</tbody></table></div>`;
+
+                    // Fiscal synergies
+                    if (strategy.fiscal_synergies.length > 0) {
+                        html += `<div class="card" style="margin-bottom: 2rem;">
+                            <h4 style="color: var(--color-success); margin-bottom: 1rem;">⚡ Sinergias Fiscales Detectadas</h4>`;
+                        
+                        strategy.fiscal_synergies.forEach(synergy => {
+                            html += `<div class="advisory-item success">
+                                <div class="advisory-title">Sinergia: ${synergy.type}</div>
+                                <div>${synergy.description}</div>
+                                <div style="margin-top: 0.5rem;"><strong>Beneficio fiscal estimado: ${this.formatCurrency(synergy.fiscal_benefit)}</strong></div>
+                            </div>`;
+                        });
+                        
+                        html += `</div>`;
+                    }
+                }
+
+                // All opportunities table
+                html += `<div class="card">
+                    <h4 style="color: var(--color-primary); margin-bottom: 1rem;">📋 Todas las Oportunidades Detectadas</h4>
+                    <table class="financing-table">
+                        <thead>
+                            <tr>
+                                <th>Instrumento</th>
+                                <th>Tipo</th>
+                                <th>Límite</th>
+                                <th>Cofinanciación</th>
+                                <th>Requisitos Técnicos</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                opportunities.forEach(opp => {
+                    html += `<tr>
+                        <td>
+                            <strong>${opp.name}</strong><br>
+                            <small style="color: var(--color-text-secondary);">${opp.description}</small>
+                        </td>
+                        <td><span class="financing-type-label ${opp.type.toLowerCase().includes('préstamo') ? 'prestamo' : opp.type.toLowerCase().includes('subvención') ? 'subvencion' : 'capital'}">${opp.type}</span></td>
+                        <td class="amount-col">${this.formatCurrency(opp.limite_financiacion_eur)}</td>
+                        <td>${opp.cofinanciacion_minima_propia_pct}% propio</td>
+                        <td style="font-size: 0.85rem;">${opp.requisitos_tecnicos}</td>
+                    </tr>`;
+                });
+
+                html += `</tbody></table></div>`;
+
+                container.innerHTML = html;
+            },
+
+            createCharts(refResults, commonResults) {
+                const createChart = (canvasId, type, data, options) => {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    if (window[canvasId]) window[canvasId].destroy();
+                    window[canvasId] = new Chart(ctx, { type, data, options });
+                };
+                createChart('taxComparisonChart', 'bar', { labels: ['Gran Canaria (REF)', 'Península (Común)'], datasets: [{ label: 'Impuesto a Pagar', data: [refResults.cuotaLiquida, commonResults.cuotaLiquida], backgroundColor: ['#002E5D', '#78909C'] }] }, { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Comparación de Carga Fiscal (Cuota Líquida)' } } });
+                const savings = [{l: 'Ahorro por RIC', v: refResults.ricDotacion * 0.25}, {l: 'Ahorro por Deducciones', v: refResults.deduccionesAplicadas}, {l: 'Abono I+D+i (Liquidez)', v: refResults.abonoMonetizacion}].filter(i => i.v > 0);
+                createChart('financingStructureChart', 'pie', { labels: savings.length ? savings.map(i=>i.l) : ['Sin Ahorros'], datasets: [{ data: savings.length ? savings.map(i=>i.v) : [1], backgroundColor: ['#0055A4', '#2E7D32', '#FFC107', '#D9D9D9'] }] }, { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Desglose del Ahorro Fiscal en Gran Canaria' } } });
+            }
+        };
+
+        // =================================================================================
+        // NAVIGATION MANAGER
+        // =================================================================================
+        const NavigationManager = {
+            showSection(sectionName) {
+                document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+                document.getElementById(sectionName + 'Section').classList.add('active');
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector(`.nav-btn[data-section="${sectionName}"]`).classList.add('active');
+            }
+        };
+
+        // =================================================================================
+        // WIZARD MANAGER
+        // =================================================================================
+        const WizardManager = {
+            currentStep: 1,
+            totalSteps: 4,
+            showStep(stepNumber) {
+                this.currentStep = stepNumber;
+                document.querySelectorAll('.wizard-step').forEach(step => step.classList.add('hidden'));
+                document.getElementById(`step${stepNumber}`).classList.remove('hidden');
+                this.updateProgress();
+            },
+            updateProgress() {
+                const progressPercentage = ((this.currentStep - 1) / (this.totalSteps - 1)) * 100;
+                document.querySelector('.progress-fill').style.width = `${progressPercentage}%`;
+                document.querySelectorAll('.progress-step').forEach((step, index) => {
+                    const stepNum = index + 1;
+                    step.classList.toggle('active', stepNum === this.currentStep);
+                    step.classList.toggle('completed', stepNum < this.currentStep);
+                });
+            }
+        };
+
+        // =================================================================================
+        // VALIDATION
+        // =================================================================================
+        const Validation = {
+            validate(state) {
+                const errors = {};
+                
+                // Step 1
+                const step1Valid = !!(state.projectName && state.sector);
+                if (!state.projectName) errors.projectName = 'El nombre del proyecto es obligatorio.';
+                if (!state.sector) errors.sector = 'Debe seleccionar un sector.';
+                
+                // Step 2
+                const step2Valid = state.inversionTotal >= 0 && state.inversionActivos <= state.inversionTotal;
+                if (state.inversionActivos > state.inversionTotal) {
+                    errors.inversionActivos = 'La inversión en activos no puede superar la inversión total.';
+                }
+
+                // Step 4
+                let step4Valid = true;
+                if (state.toggleID && state.gastosID <= 0) {
+                    step4Valid = false;
+                    errors.gastosID = 'Con I+D+i activado, los gastos deben ser mayores a cero.';
+                }
+                if (state.toggleIT && state.gastosIT <= 0) {
+                    step4Valid = false;
+                    errors.gastosIT = 'Con IT activado, los gastos deben ser mayores a cero.';
+                }
+                if (state.toggleAudiovisual && state.gastosAudiovisual <= 0) {
+                    step4Valid = false;
+                    errors.gastosAudiovisual = 'Con la deducción audiovisual activada, los gastos deben ser mayores a cero.';
+                }
+
+                const allStepsValid = step1Valid && step2Valid && step4Valid && this.checkIncompatibilities(state).isValid;
+
+                return { allStepsValid, step1Valid, step2Valid, errors };
+            },
+            
+            checkIncompatibilities(project) {
+                 const errors = [];
+                if (project.toggleMonetizacion && project.toggleZEC) errors.push({ message: 'La monetización de I+D+i es incompatible con el régimen ZEC.' });
+                if (project.toggleRIC && project.toggleDIC) errors.push({ message: 'Advertencia: RIC y DIC son incompatibles para el mismo activo. Asegúrese de que las bases de inversión no se solapan.' });
+                if (project.toggleZEC && project.tipoEmpresa === 'nueva') errors.push({ message: 'Al acogerse a ZEC (4%), no aplica el tipo reducido para nuevas empresas (15%). El tipo ZEC prevalece.' });
+                return { isValid: errors.length === 0, errors };
+            }
+        };
+
+        // =================================================================================
+        // EVENT HANDLERS
+        // =================================================================================
+        const EventHandlers = {
+            init() {
+                this.initAuth();
+                this.initNav();
+                this.initWizard();
+                this.initCaseStudies();
+            },
+
+            initAuth() {
+                document.getElementById('loginForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    if (document.getElementById('password').value === 'REF2025*') {
+                        document.getElementById('loginScreen').classList.add('hidden');
+                        document.getElementById('mainApp').classList.remove('hidden');
+                    } else {
+                        document.getElementById('passwordError').classList.add('show');
+                        document.getElementById('password').classList.add('error');
+                    }
+                });
+                document.getElementById('logoutBtn').addEventListener('click', () => { window.location.reload(); });
+            },
+
+            initNav() {
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', (e) => NavigationManager.showSection(e.target.dataset.section)));
+            },
+            
+            initWizard() {
+                document.getElementById('projectWizard').addEventListener('input', () => {
+                    App.render();
+                });
+
+                document.getElementById('btnStep1').addEventListener('click', () => WizardManager.showStep(2));
+                document.getElementById('btnPrev2').addEventListener('click', () => WizardManager.showStep(1));
+                document.getElementById('btnStep2').addEventListener('click', () => WizardManager.showStep(3));
+                document.getElementById('btnPrev3').addEventListener('click', () => WizardManager.showStep(2));
+                document.getElementById('btnStep3').addEventListener('click', () => WizardManager.showStep(4));
+                document.getElementById('btnPrev4').addEventListener('click', () => WizardManager.showStep(3));
+
+                document.getElementById('btnAnalyzeProject').addEventListener('click', () => {
+                    App.runAnalysis();
+                });
+            },
+
+            initCaseStudies() {
+                document.getElementById('caseStudyLoader').addEventListener('change', (e) => {
+                    const caseId = e.target.value;
+                    if (caseId) {
+                        const caseData = Data.case_studies[caseId];
+                        State.updateForm(caseData);
+                        App.render();
+                        App.runAnalysis(true); // Run analysis and force navigation
+                    } else {
+                        App.render();
+                    }
+                });
+            }
+        };
+
+        // =================================================================================
+        // MAIN APP
+        // =================================================================================
+        const App = {
+            init() {
+                EventHandlers.init();
+                this.render();
+            },
+
+            runAnalysis(forceNavigation = false) {
+                const project = State.collect();
+                const results = FiscalEngine.calculate(project);
+                const commonResults = FiscalEngine.calculate({ ...project, ubicacion: 'peninsula' });
+                const financingResults = FinancingEngine.analyze(project);
+                const advice = AdvisoryEngine.generate(project, results, financingResults);
+                
+                UI.displayResults(results, commonResults, project);
+                UI.displayAdvisory(advice);
+                UI.displayFinancing(financingResults);
+                
+                if (forceNavigation) {
+                    NavigationManager.showSection('comparison');
+                }
+
+                // Defer chart rendering to ensure the canvas is visible and ready
+                requestAnimationFrame(() => {
+                    UI.createCharts(results, commonResults);
+                });
+
+                window.currentAnalysis = { project, refResults: results, commonResults, financingResults, advice };
+            },
+            
+            render() {
+                const state = State.collect();
+                const validation = Validation.validate(state);
+
+                UI.updateButtons(validation);
+                UI.updateErrorMessages(validation.errors);
+                UI.updateFieldVisibility(state);
+                UI.updateIncompatibilityAlert(Validation.checkIncompatibilities(state));
+                UI.updateSectorGuidance(state.sector);
+                
+                const caseStudyLoader = document.getElementById('caseStudyLoader');
+                if (caseStudyLoader) {
+                    UI.updateCaseStudyDescription(caseStudyLoader.value);
+                }
+            }
+        };
+
+        // =================================================================================
+        // GLOBAL FUNCTIONS & APP INITIALIZATION
+        // =================================================================================
+
+        window.generatePDFReport = function() {
+            if (!window.currentAnalysis) { 
+                alert('Debe realizar un análisis antes de generar el informe.'); 
+                return; 
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const { project, refResults, commonResults, financingResults, advice } = window.currentAnalysis;
+            
+            // Enhanced PDF styling
+            const colors = {
+                primary: [41, 128, 185],
+                success: [39, 174, 96],
+                warning: [243, 156, 18],
+                danger: [231, 76, 60],
+                dark: [52, 73, 94],
+                light: [236, 240, 241]
+            };
+            
+            let yPosition = 20;
+            const pageHeight = doc.internal.pageSize.height;
+            const margin = 20;
+            
+            // Helper function to add new page if needed
+            const checkPageBreak = (requiredSpace = 30) => {
+                if (yPosition + requiredSpace > pageHeight - margin) {
+                    doc.addPage();
+                    yPosition = 20;
+                    return true;
+                }
+                return false;
+            };
+            
+            // Helper function to add styled text
+            const addStyledText = (text, x, y, options = {}) => {
+                const { fontSize = 12, fontStyle = 'normal', color = colors.dark, maxWidth = 170 } = options;
+                doc.setFontSize(fontSize);
+                doc.setFont('helvetica', fontStyle);
+                doc.setTextColor(...color);
+                
+                if (maxWidth) {
+                    const lines = doc.splitTextToSize(text, maxWidth);
+                    lines.forEach((line, index) => {
+                        doc.text(line, x, y + (index * (fontSize * 0.4)));
+                    });
+                    return lines.length * (fontSize * 0.4);
+                } else {
+                    doc.text(text, x, y);
+                    return fontSize * 0.4;
+                }
+            };
+            
+            // Header
+            doc.setFillColor(...colors.primary);
+            doc.rect(0, 0, 210, 40, 'F');
+            addStyledText('INFORME DE ANÁLISIS FISCAL Y FINANCIERO', 20, 25, { 
+                fontSize: 18, fontStyle: 'bold', color: [255, 255, 255] 
+            });
+            addStyledText('Simulador SPEGC - Incentivos Fiscales de Canarias', 20, 32, { 
+                fontSize: 10, color: [255, 255, 255] 
+            });
+            
+            yPosition = 50;
+            
+            // Project Summary
+            checkPageBreak(40);
+            addStyledText('RESUMEN DEL PROYECTO', 20, yPosition, { fontSize: 14, fontStyle: 'bold', color: colors.primary });
+            yPosition += 10;
+            
+            const projectData = [
+                ['Sector', project.sector.charAt(0).toUpperCase() + project.sector.slice(1)],
+                ['Tipo de Empresa', project.tipoEmpresa === 'nueva' ? 'Nueva Empresa' : 'Empresa Existente'],
+                ['Inversión Total', UI.formatCurrency(project.inversionTotal)],
+                ['Beneficio Bruto Anual', UI.formatCurrency(project.beneficioBruto)],
+                ['Empleos Generados', project.empleos.toString()]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                head: [['Concepto', 'Valor']],
+                body: projectData,
+                theme: 'grid',
+                headStyles: { fillColor: colors.primary, textColor: [255, 255, 255] },
+                styles: { fontSize: 10 },
+                margin: { left: 20, right: 20 }
+            });
+            
+            yPosition = doc.lastAutoTable.finalY + 15;
+            
+            // Fiscal Results Comparison
+            checkPageBreak(60);
+            addStyledText('COMPARATIVA FISCAL: CANARIAS vs PENÍNSULA', 20, yPosition, { 
+                fontSize: 14, fontStyle: 'bold', color: colors.primary 
+            });
+            yPosition += 10;
+            
+            const fiscalComparison = [
+                ['Concepto', 'Canarias', 'Península', 'Diferencia'],
+                ['Cuota Íntegra', UI.formatCurrency(refResults.cuotaIntegra), UI.formatCurrency(commonResults.cuotaIntegra), UI.formatCurrency(refResults.cuotaIntegra - commonResults.cuotaIntegra)],
+                ['Deducciones Aplicadas', UI.formatCurrency(refResults.deduccionesAplicadas), UI.formatCurrency(commonResults.deduccionesAplicadas), UI.formatCurrency(refResults.deduccionesAplicadas - commonResults.deduccionesAplicadas)],
+                ['Cuota Líquida', UI.formatCurrency(refResults.cuotaLiquida), UI.formatCurrency(commonResults.cuotaLiquida), UI.formatCurrency(refResults.cuotaLiquida - commonResults.cuotaLiquida)],
+                ['Abono por Monetización', UI.formatCurrency(refResults.abonoMonetizacion), UI.formatCurrency(commonResults.abonoMonetizacion), UI.formatCurrency(refResults.abonoMonetizacion - commonResults.abonoMonetizacion)]
+            ];
+            
+            doc.autoTable({
+                startY: yPosition,
+                head: [fiscalComparison[0]],
+                body: fiscalComparison.slice(1),
+                theme: 'grid',
+                headStyles: { fillColor: colors.primary, textColor: [255, 255, 255] },
+                styles: { fontSize: 9 },
+                columnStyles: {
+                    3: { textColor: refResults.cuotaLiquida < commonResults.cuotaLiquida ? colors.success : colors.danger }
+                },
+                margin: { left: 20, right: 20 }
+            });
+            
+            yPosition = doc.lastAutoTable.finalY + 15;
+            
+            // Financing Opportunities
+            if (financingResults.opportunities && financingResults.opportunities.length > 0) {
+                checkPageBreak(40);
+                addStyledText('OPORTUNIDADES DE FINANCIACIÓN DETECTADAS', 20, yPosition, { 
+                    fontSize: 14, fontStyle: 'bold', color: colors.primary 
+                });
+                yPosition += 10;
+                
+                const financingData = financingResults.opportunities.map(opp => [
+                    opp.name,
+                    opp.type,
+                    UI.formatCurrency(opp.limite_financiacion_eur),
+                    `${opp.cofinanciacion_minima_propia_pct}%`,
+                    opp.tipo_interes.fijo ? 
+                        (opp.tipo_interes.rango_min === 0 ? 'Sin interés' : `${opp.tipo_interes.rango_min}%`) :
+                        `${opp.tipo_interes.rango_min}%-${opp.tipo_interes.rango_max}%`
+                ]);
+                
+                doc.autoTable({
+                    startY: yPosition,
+                    head: [['Instrumento', 'Tipo', 'Límite', 'Cofinanc.', 'Interés']],
+                    body: financingData,
+                    theme: 'grid',
+                    headStyles: { fillColor: colors.success, textColor: [255, 255, 255] },
+                    styles: { fontSize: 8 },
+                    margin: { left: 20, right: 20 }
+                });
+                
+                yPosition = doc.lastAutoTable.finalY + 15;
+            }
+            
+            // Advisory Recommendations
+            if (advice && advice.length > 0) {
+                checkPageBreak(40);
+                addStyledText('RECOMENDACIONES DEL ASESOR FISCAL', 20, yPosition, { 
+                    fontSize: 14, fontStyle: 'bold', color: colors.primary 
+                });
+                yPosition += 10;
+                
+                advice.forEach((adviceItem, index) => {
+                    checkPageBreak(25);
+                    
+                    const typeColor = adviceItem.type === 'success' ? colors.success :
+                                    adviceItem.type === 'warning' ? colors.warning :
+                                    adviceItem.type === 'critical' ? colors.danger : colors.dark;
+                    
+                    // Title
+                    addStyledText(`${index + 1}. ${adviceItem.title}`, 20, yPosition, { 
+                        fontSize: 11, fontStyle: 'bold', color: typeColor 
+                    });
+                    yPosition += 8;
+                    
+                    // Content
+                    const contentHeight = addStyledText(adviceItem.content, 25, yPosition, { 
+                        fontSize: 9, maxWidth: 165 
+                    });
+                    yPosition += contentHeight + 8;
+                });
+            }
+            
+            // Footer
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(...colors.dark);
+                doc.text(`Página ${i} de ${totalPages}`, 20, pageHeight - 10);
+                doc.text(`Generado el ${new Date().toLocaleDateString('es-ES')} por SPEGC Simulator`, 105, pageHeight - 10, { align: 'center' });
+                doc.text('www.spegc.org', 190, pageHeight - 10, { align: 'right' });
+            }
+            
+            // Save the PDF
+            const fileName = `Informe_Fiscal_${project.sector}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+        }
+
+        // Initialize the application
+        App.init();
+    });
+
+</script>
